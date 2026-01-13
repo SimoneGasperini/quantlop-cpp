@@ -7,6 +7,8 @@ class StateVector
 public:
     StateVector(int num_qubits, Vector data);
 
+    StateVector(const StateVector& other);
+
     int num_qubits() const;
     Vector &data();
     const Vector &data() const;

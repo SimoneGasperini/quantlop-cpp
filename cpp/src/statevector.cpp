@@ -4,6 +4,10 @@ StateVector::StateVector(int num_qubits, Vector data)
     : _num_qubits(num_qubits),
       _data(std::move(data)) {}
 
+StateVector::StateVector(const StateVector& other)
+    : _num_qubits(other._num_qubits),
+      _data(other._data) {}
+
 int StateVector::num_qubits() const { return _num_qubits; }
 
 Vector &StateVector::data() { return _data; }

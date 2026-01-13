@@ -81,9 +81,60 @@ inline StateVector expm_multiply(const Hamiltonian &A, const StateVector &psi)
     return f;
 }
 
+inline std::vector<StateVector> expm_multiply_trace(const Hamiltonian &A, const StateVector &psi)
+{
+    std::vector<StateVector> trace;
+    const double tol = std::ldexp(1.0, -16);
+    const auto [m_star, s] = fragment_3_1(A);
+    StateVector b = psi;
+    StateVector f = psi;
+    trace.push_back(StateVector(f));
+    auto &f_data = f.data();
+    for (int step = 0; step < s; ++step)
+    {
+        double c1 = b.inf_norm();
+        for (int j = 1; j <= m_star; ++j)
+        {
+            Vector tmp = A.matvec(b.data());
+            const double scale = 1.0 / static_cast<double>(s * j);
+            for (auto &v : tmp)
+            {
+                v *= scale;
+            }
+            b = StateVector(psi.num_qubits(), std::move(tmp));
+            double c2 = b.inf_norm();
+            const auto &b_data = b.data();
+            for (int i = 0; i < f_data.size(); ++i)
+            {
+                f_data[i] += b_data[i];
+            }
+            if (c1 + c2 <= tol * f.inf_norm())
+            {
+                break;
+            }
+            c1 = c2;
+
+	    trace.push_back(StateVector(f));
+        }
+        b = f;
+    }
+    return trace;
+}
+
+
+
+
 inline StateVector evolve(const Hamiltonian &ham, const StateVector &psi, Complex coeff = Complex(1.0, 0.0))
 {
     const Complex i(0.0, 1.0);
     const Hamiltonian expm = (-i * coeff) * ham;
     return expm_multiply(expm, psi);
 }
+
+inline std::vector<StateVector> trace_evolve(const Hamiltonian &ham, const StateVector &psi, Complex coeff = Complex(1.0, 0.0))
+{
+    const Complex i(0.0, 1.0);
+    const Hamiltonian expm = (-i * coeff) * ham;
+    return expm_multiply_trace(expm, psi);
+}
+
