@@ -1,6 +1,7 @@
 #pragma once
 
 #include <complex>
+#include <cstdint>
 #include <string>
 
 class MatVec
@@ -13,4 +14,5 @@ public:
 private:
     std::complex<double> _coeff;
     std::string _string;
+    std::uint64_t _flip_mask, y_mask, z_mask;
 };
