@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(pybind11 CONFIG REQUIRED)
+find_package(OpenMP REQUIRED)
 
 pybind11_add_module(
     _core
@@ -15,5 +16,6 @@ pybind11_add_module(
     cpp/src/hamiltonian.cpp
 )
 target_include_directories(_core PRIVATE cpp/include)
+target_link_libraries(_core PRIVATE OpenMP::OpenMP_CXX)
 
 install(TARGETS _core LIBRARY DESTINATION quantlop)
