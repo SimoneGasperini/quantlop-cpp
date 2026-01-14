@@ -1,24 +1,25 @@
 #pragma once
 
+#include <cstddef>
 #include "utils.hpp"
 
 class StateVector
 {
 public:
-    StateVector(int num_qubits, Vector data);
+    StateVector(std::size_t num_qubits, Vector data);
 
-    StateVector(const StateVector& other);
+    StateVector(const StateVector &other);
 
-    int num_qubits() const;
+    std::size_t num_qubits() const;
     Vector &data();
     const Vector &data() const;
 
-    Complex &operator[](int idx);
-    const Complex &operator[](int idx) const;
+    Complex &operator[](std::size_t idx);
+    const Complex &operator[](std::size_t idx) const;
 
     double inf_norm() const;
 
 private:
-    int _num_qubits;
+    std::size_t _num_qubits;
     Vector _data;
 };

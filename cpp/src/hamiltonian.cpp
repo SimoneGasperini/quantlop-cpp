@@ -64,12 +64,12 @@ MatVecFn Hamiltonian::make_matvec(const std::vector<PauliWord> &pwords)
 
     return [matvecs = std::move(matvecs)](const Vector &vec)
     {
-        const int dim = static_cast<int>(vec.size());
+        const std::size_t dim = vec.size();
         Vector out(dim, Complex());
         for (const auto &matvec : matvecs)
         {
             const Vector partial = matvec(vec);
-            for (int i = 0; i < dim; ++i)
+            for (std::size_t i = 0; i < dim; ++i)
             {
                 out[i] += partial[i];
             }

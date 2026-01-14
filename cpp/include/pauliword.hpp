@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include "utils.hpp"
 
 class PauliWord
@@ -9,7 +10,7 @@ public:
 
     Complex coeff() const;
     const std::string &string() const;
-    int num_qubits() const;
+    std::size_t num_qubits() const;
     Vector matvec(const Vector &vec) const;
 
     PauliWord operator*(Complex c) const;

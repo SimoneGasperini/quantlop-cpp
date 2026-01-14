@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <cstddef>
 #include <utility>
 #include <vector>
 
@@ -26,23 +27,26 @@ inline const std::vector<std::pair<int, double>> &theta_table()
     return table;
 }
 
-inline std::pair<int, int> fragment_3_1(const Hamiltonian &A)
+inline std::pair<int, std::size_t> fragment_3_1(const Hamiltonian &A)
 {
     int m_star = -1;
-    double s = 0.0;
+    std::size_t s_star = 0;
+    double best_cost = 0.0;
     const double A_one_norm = A.lcu_norm();
     for (const auto &entry : theta_table())
     {
         const int m = entry.first;
         const double theta = entry.second;
         const double s_m = std::ceil(A_one_norm / theta);
-        if (m_star < 0 || m * s_m < m_star * s)
+        const double cost = m * s_m;
+        if (m_star < 0 || cost < best_cost)
         {
             m_star = m;
-            s = s_m;
+            s_star = static_cast<std::size_t>(s_m);
+            best_cost = cost;
         }
     }
-    return std::make_pair(m_star, static_cast<int>(s));
+    return std::make_pair(m_star, s_star);
 }
 
 inline StateVector expm_multiply(const Hamiltonian &A, const StateVector &psi)
@@ -52,7 +56,7 @@ inline StateVector expm_multiply(const Hamiltonian &A, const StateVector &psi)
     StateVector b = psi;
     StateVector f = psi;
     auto &f_data = f.data();
-    for (int step = 0; step < s; ++step)
+    for (std::size_t step = 0; step < s; ++step)
     {
         double c1 = b.inf_norm();
         for (int j = 1; j <= m_star; ++j)
@@ -66,7 +70,7 @@ inline StateVector expm_multiply(const Hamiltonian &A, const StateVector &psi)
             b = StateVector(psi.num_qubits(), std::move(tmp));
             double c2 = b.inf_norm();
             const auto &b_data = b.data();
-            for (int i = 0; i < f_data.size(); ++i)
+            for (std::size_t i = 0; i < f_data.size(); ++i)
             {
                 f_data[i] += b_data[i];
             }
@@ -90,7 +94,7 @@ inline std::vector<StateVector> expm_multiply_trace(const Hamiltonian &A, const 
     StateVector f = psi;
     trace.push_back(StateVector(f));
     auto &f_data = f.data();
-    for (int step = 0; step < s; ++step)
+    for (std::size_t step = 0; step < s; ++step)
     {
         double c1 = b.inf_norm();
         for (int j = 1; j <= m_star; ++j)
@@ -104,7 +108,7 @@ inline std::vector<StateVector> expm_multiply_trace(const Hamiltonian &A, const 
             b = StateVector(psi.num_qubits(), std::move(tmp));
             double c2 = b.inf_norm();
             const auto &b_data = b.data();
-            for (int i = 0; i < f_data.size(); ++i)
+            for (std::size_t i = 0; i < f_data.size(); ++i)
             {
                 f_data[i] += b_data[i];
             }
@@ -114,15 +118,12 @@ inline std::vector<StateVector> expm_multiply_trace(const Hamiltonian &A, const 
             }
             c1 = c2;
 
-	    trace.push_back(StateVector(f));
+            trace.push_back(StateVector(f));
         }
         b = f;
     }
     return trace;
 }
-
-
-
 
 inline StateVector evolve(const Hamiltonian &ham, const StateVector &psi, Complex coeff = Complex(1.0, 0.0))
 {
@@ -137,4 +138,3 @@ inline std::vector<StateVector> trace_evolve(const Hamiltonian &ham, const State
     const Hamiltonian expm = (-i * coeff) * ham;
     return expm_multiply_trace(expm, psi);
 }
-

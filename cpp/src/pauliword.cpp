@@ -9,7 +9,7 @@ Complex PauliWord::coeff() const { return _coeff; }
 
 const std::string &PauliWord::string() const { return _string; }
 
-int PauliWord::num_qubits() const { return _string.size(); }
+std::size_t PauliWord::num_qubits() const { return _string.size(); }
 
 Vector PauliWord::matvec(const Vector &vec) const { return _matvec(vec); }
 
@@ -21,26 +21,26 @@ MatVecFn PauliWord::make_matvec(Complex coeff, std::string string)
 {
     return [coeff, string](const Vector &vec)
     {
-        const int nq = string.size();
-        const int dim = 1 << nq;
+        const std::size_t nq = string.size();
+        const std::size_t dim = std::size_t{1} << nq;
         Vector out(dim, Complex());
-        for (int i = 0; i < dim; ++i)
+        for (std::size_t i = 0; i < dim; ++i)
         {
-            int j = i;
+            std::size_t j = i;
             Complex phase(1.0, 0.0);
-            for (int q = 0; q < nq; ++q)
+            for (std::size_t q = 0; q < nq; ++q)
             {
-                const int bit_pos = nq - 1 - q;
-                const bool bit = ((i >> bit_pos) & 1) != 0;
+                const std::size_t bit_pos = nq - 1 - q;
+                const bool bit = ((i >> bit_pos) & std::size_t{1}) != 0;
                 switch (string[q])
                 {
                 case 'I':
                     break;
                 case 'X':
-                    j ^= (1 << bit_pos);
+                    j ^= (std::size_t{1} << bit_pos);
                     break;
                 case 'Y':
-                    j ^= (1 << bit_pos);
+                    j ^= (std::size_t{1} << bit_pos);
                     phase *= bit ? Complex(0.0, -1.0) : Complex(0.0, 1.0);
                     break;
                 case 'Z':
