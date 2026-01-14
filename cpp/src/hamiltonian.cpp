@@ -1,12 +1,5 @@
 #include "hamiltonian.hpp"
 
-#ifdef _OPENMP
-  #include <omp.h>
-#warning "OpenMP enabled"
-#else
-#warning "OpenMP disabled"
-#endif
-
 Hamiltonian::Hamiltonian(std::vector<PauliWord> pws)
     : pwords(std::move(pws)) {}
 

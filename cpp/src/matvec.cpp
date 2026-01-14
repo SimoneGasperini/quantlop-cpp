@@ -1,4 +1,10 @@
 #include "matvec.hpp"
+#ifdef _OPENMP
+  #include <omp.h>
+#warning "OpenMP enabled"
+#else
+#warning "OpenMP disabled"
+#endif
 
 MatVec::MatVec(Complex c, String str)
     : coeff(c),
@@ -34,6 +40,9 @@ void MatVec::operator()(const Complex *in, Complex *out) const
     const Complex I(0.0, 1.0);
     const Size dim = Size(1) << string.size();
     const int y_count = std::popcount(y_mask);
+    #ifdef _OPENMP
+    #pragma omp parallel for schedule(static)
+    #endif
     for (Index i = 0; i < dim; ++i)
     {
         const Mask j = Mask(i) ^ flip_mask;
