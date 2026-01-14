@@ -12,7 +12,6 @@
 #include "hamiltonian.hpp"
 #include "pauliword.hpp"
 #include "simulation.hpp"
-#include "statevector.hpp"
 #include "utils.hpp"
 
 namespace py = pybind11;
@@ -25,17 +24,11 @@ evolve_py(const Hamiltonian &ham,
     py::buffer_info info = psi.request();
 
     const std::size_t dim = static_cast<std::size_t>(info.shape[0]);
-    const std::size_t nq = static_cast<std::size_t>(std::log2(static_cast<double>(dim)));
     const auto *ptr = static_cast<const Complex *>(info.ptr);
-    std::vector<Complex> data(ptr, ptr + dim);
-    StateVector state(nq, std::move(data));
-    StateVector out = evolve(ham, state, coeff);
-
     py::array_t<Complex> result(static_cast<py::ssize_t>(dim));
     py::buffer_info out_info = result.request();
     auto *out_ptr = static_cast<Complex *>(out_info.ptr);
-    const auto &out_data = out.data();
-    std::copy(out_data.begin(), out_data.end(), out_ptr);
+    evolve_into(ham, ptr, dim, out_ptr, coeff);
     return result;
 }
 
@@ -47,13 +40,12 @@ trace_evolve_py(const Hamiltonian &ham,
     py::buffer_info info = psi.request();
 
     const std::size_t dim = static_cast<std::size_t>(info.shape[0]);
-    const std::size_t nq = static_cast<std::size_t>(std::log2(static_cast<double>(dim)));
     const auto *ptr = static_cast<const Complex *>(info.ptr);
-    std::vector<Complex> data(ptr, ptr + dim);
-    StateVector state(nq, std::move(data));
-    std::vector<StateVector> out = trace_evolve(ham, state, coeff);
+    const std::size_t max_steps = trace_evolve_max_steps(ham);
+    std::vector<Complex> out(max_steps * dim);
+    const std::size_t steps = trace_evolve_into(ham, ptr, dim, out.data(), coeff);
 
-    py::array_t<Complex> result({static_cast<py::ssize_t>(out.size()),
+    py::array_t<Complex> result({static_cast<py::ssize_t>(steps),
                                  static_cast<py::ssize_t>(dim)});
     auto r = result.mutable_unchecked<2>();
 
@@ -65,10 +57,10 @@ trace_evolve_py(const Hamiltonian &ham,
     //     std::copy(it_data.begin(), it_data.end(), out_ptr[std::distance(out.begin(), it)]);
     // }
 
-    for (py::ssize_t i = 0; i < (py::ssize_t)out.size(); ++i)
+    for (py::ssize_t i = 0; i < static_cast<py::ssize_t>(steps); ++i)
     {
-        const auto &v = out[i].data(); // assuming vector<Complex>
-        std::copy(v.begin(), v.end(), &r(i, 0));
+        const Complex *row = out.data() + (static_cast<std::size_t>(i) * dim);
+        std::copy(row, row + dim, &r(i, 0));
     }
     // const auto &out_data = out.data();
     // std::copy(out_data.begin(), out_data.end(), out_ptr);

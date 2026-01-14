@@ -1,12 +1,12 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <utility>
 #include <vector>
 
 #include "hamiltonian.hpp"
-#include "statevector.hpp"
 #include "utils.hpp"
 
 inline const std::vector<std::pair<int, double>> &theta_table()
@@ -27,17 +27,17 @@ inline const std::vector<std::pair<int, double>> &theta_table()
     return table;
 }
 
-inline std::pair<int, std::size_t> fragment_3_1(const Hamiltonian &A)
+inline std::pair<int, std::size_t> fragment_3_1(const Hamiltonian &ham)
 {
     int m_star = -1;
     std::size_t s_star = 0;
     double best_cost = 0.0;
-    const double A_one_norm = A.lcu_norm();
+    const double one_norm = ham.lcu_norm();
     for (const auto &entry : theta_table())
     {
         const int m = entry.first;
         const double theta = entry.second;
-        const double s_m = std::ceil(A_one_norm / theta);
+        const double s_m = std::ceil(one_norm / theta);
         const double cost = m * s_m;
         if (m_star < 0 || cost < best_cost)
         {
@@ -49,92 +49,118 @@ inline std::pair<int, std::size_t> fragment_3_1(const Hamiltonian &A)
     return std::make_pair(m_star, s_star);
 }
 
-inline StateVector expm_multiply(const Hamiltonian &A, const StateVector &psi)
+inline double inf_norm(const Complex *psi, std::size_t dim)
+{
+    double norm = 0.0;
+    for (std::size_t i = 0; i < dim; ++i)
+    {
+        const double val = std::abs(psi[i]);
+        if (val > norm)
+        {
+            norm = val;
+        }
+    }
+    return norm;
+}
+
+inline void expm_multiply_into(const Hamiltonian &ham, const Complex *psi, std::size_t dim,
+                               Complex *out)
 {
     const double tol = std::ldexp(1.0, -24);
-    const auto [m_star, s] = fragment_3_1(A);
-    StateVector b = psi;
-    StateVector f = psi;
-    auto &f_data = f.data();
+    const auto [m_star, s] = fragment_3_1(ham);
+    std::vector<Complex> b(psi, psi + dim);
+    std::vector<Complex> tmp(dim);
+    std::copy(psi, psi + dim, out);
     for (std::size_t step = 0; step < s; ++step)
     {
-        double c1 = b.inf_norm();
+        double c1 = inf_norm(b.data(), dim);
         for (int j = 1; j <= m_star; ++j)
         {
-            Vector tmp = A.matvec(b.data());
+            ham.matvec_into(b.data(), tmp.data());
             const double scale = 1.0 / static_cast<double>(s * j);
             for (auto &v : tmp)
             {
                 v *= scale;
             }
-            b = StateVector(psi.num_qubits(), std::move(tmp));
-            double c2 = b.inf_norm();
-            const auto &b_data = b.data();
-            for (std::size_t i = 0; i < f_data.size(); ++i)
+            b.swap(tmp);
+            double c2 = inf_norm(b.data(), dim);
+            for (std::size_t i = 0; i < dim; ++i)
             {
-                f_data[i] += b_data[i];
+                out[i] += b[i];
             }
-            if (c1 + c2 <= tol * f.inf_norm())
+            if (c1 + c2 <= tol * inf_norm(out, dim))
             {
                 break;
             }
             c1 = c2;
         }
-        b = f;
+        std::copy(out, out + dim, b.begin());
     }
-    return f;
 }
 
-inline std::vector<StateVector> expm_multiply_trace(const Hamiltonian &A, const StateVector &psi)
+inline std::size_t expm_multiply_trace_into(const Hamiltonian &ham, const Complex *psi,
+                                            std::size_t dim, Complex *out)
 {
-    std::vector<StateVector> trace;
     const double tol = std::ldexp(1.0, -16);
-    const auto [m_star, s] = fragment_3_1(A);
-    StateVector b = psi;
-    StateVector f = psi;
-    trace.push_back(StateVector(f));
-    auto &f_data = f.data();
+    const auto [m_star, s] = fragment_3_1(ham);
+    std::vector<Complex> b(psi, psi + dim);
+    std::vector<Complex> f(psi, psi + dim);
+    std::vector<Complex> tmp(dim);
+    std::copy(f.begin(), f.end(), out);
+    std::size_t trace_len = 1;
     for (std::size_t step = 0; step < s; ++step)
     {
-        double c1 = b.inf_norm();
+        double c1 = inf_norm(b.data(), dim);
         for (int j = 1; j <= m_star; ++j)
         {
-            Vector tmp = A.matvec(b.data());
+            ham.matvec_into(b.data(), tmp.data());
             const double scale = 1.0 / static_cast<double>(s * j);
             for (auto &v : tmp)
             {
                 v *= scale;
             }
-            b = StateVector(psi.num_qubits(), std::move(tmp));
-            double c2 = b.inf_norm();
-            const auto &b_data = b.data();
-            for (std::size_t i = 0; i < f_data.size(); ++i)
+            b.swap(tmp);
+            double c2 = inf_norm(b.data(), dim);
+            for (std::size_t i = 0; i < dim; ++i)
             {
-                f_data[i] += b_data[i];
+                f[i] += b[i];
             }
-            if (c1 + c2 <= tol * f.inf_norm())
+            if (c1 + c2 <= tol * inf_norm(f.data(), dim))
             {
                 break;
             }
             c1 = c2;
 
-            trace.push_back(StateVector(f));
+            std::copy(f.begin(), f.end(), out + trace_len * dim);
+            ++trace_len;
         }
-        b = f;
+        std::copy(f.begin(), f.end(), b.begin());
     }
-    return trace;
+    return trace_len;
 }
 
-inline StateVector evolve(const Hamiltonian &ham, const StateVector &psi, Complex coeff = Complex(1.0, 0.0))
+inline std::size_t trace_evolve_max_steps(const Hamiltonian &ham)
+{
+    const auto [m_star, s] = fragment_3_1(ham);
+    if (m_star < 0)
+    {
+        return 0;
+    }
+    return 1 + s * static_cast<std::size_t>(m_star);
+}
+
+inline void evolve_into(const Hamiltonian &ham, const Complex *psi, std::size_t dim,
+                        Complex *out, Complex coeff = Complex(1.0, 0.0))
 {
     const Complex i(0.0, 1.0);
     const Hamiltonian expm = (-i * coeff) * ham;
-    return expm_multiply(expm, psi);
+    expm_multiply_into(expm, psi, dim, out);
 }
 
-inline std::vector<StateVector> trace_evolve(const Hamiltonian &ham, const StateVector &psi, Complex coeff = Complex(1.0, 0.0))
+inline std::size_t trace_evolve_into(const Hamiltonian &ham, const Complex *psi, std::size_t dim,
+                                     Complex *out, Complex coeff = Complex(1.0, 0.0))
 {
     const Complex i(0.0, 1.0);
     const Hamiltonian expm = (-i * coeff) * ham;
-    return expm_multiply_trace(expm, psi);
+    return expm_multiply_trace_into(expm, psi, dim, out);
 }

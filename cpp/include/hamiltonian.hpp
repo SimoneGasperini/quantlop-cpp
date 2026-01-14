@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "pauliword.hpp"
 #include "utils.hpp"
 
@@ -11,7 +14,7 @@ public:
     const std::vector<PauliWord> &pwords() const;
     std::vector<Complex> coeffs() const;
     std::vector<std::string> strings() const;
-    Vector matvec(const Vector &vec) const;
+    void matvec_into(const Complex *in, Complex *out) const;
 
     Hamiltonian operator*(Complex c) const;
     friend Hamiltonian operator*(Complex c, const Hamiltonian &ham);

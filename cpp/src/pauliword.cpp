@@ -11,7 +11,7 @@ const std::string &PauliWord::string() const { return _string; }
 
 std::size_t PauliWord::num_qubits() const { return _string.size(); }
 
-Vector PauliWord::matvec(const Vector &vec) const { return _matvec(vec); }
+void PauliWord::matvec_into(const Complex *in, Complex *out) const { _matvec(in, out); }
 
 PauliWord PauliWord::operator*(Complex c) const { return PauliWord(_coeff * c, _string); }
 
@@ -19,11 +19,10 @@ PauliWord operator*(Complex c, const PauliWord &pw) { return pw * c; }
 
 MatVecFn PauliWord::make_matvec(Complex coeff, std::string string)
 {
-    return [coeff, string](const Vector &vec)
+    return [coeff, string](const Complex *in, Complex *out)
     {
         const std::size_t nq = string.size();
         const std::size_t dim = std::size_t{1} << nq;
-        Vector out(dim, Complex());
         for (std::size_t i = 0; i < dim; ++i)
         {
             std::size_t j = i;
@@ -48,8 +47,7 @@ MatVecFn PauliWord::make_matvec(Complex coeff, std::string string)
                     break;
                 }
             }
-            out[j] += coeff * phase * vec[i];
+            out[j] += coeff * phase * in[i];
         }
-        return out;
     };
 }

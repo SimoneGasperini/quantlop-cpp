@@ -28,7 +28,7 @@ std::vector<std::string> Hamiltonian::strings() const
     return out;
 }
 
-Vector Hamiltonian::matvec(const Vector &vec) const { return _matvec(vec); }
+void Hamiltonian::matvec_into(const Complex *in, Complex *out) const { _matvec(in, out); }
 
 Hamiltonian Hamiltonian::operator*(Complex c) const
 {
@@ -62,18 +62,18 @@ MatVecFn Hamiltonian::make_matvec(const std::vector<PauliWord> &pwords)
         matvecs.push_back(PauliWord::make_matvec(pw.coeff(), pw.string()));
     }
 
-    return [matvecs = std::move(matvecs)](const Vector &vec)
+    const std::size_t dim = pwords.empty()
+                                ? 0
+                                : (std::size_t{1} << pwords.front().string().size());
+    return [matvecs = std::move(matvecs), dim](const Complex *in, Complex *out)
     {
-        const std::size_t dim = vec.size();
-        Vector out(dim, Complex());
+        for (std::size_t i = 0; i < dim; ++i)
+        {
+            out[i] = Complex();
+        }
         for (const auto &matvec : matvecs)
         {
-            const Vector partial = matvec(vec);
-            for (std::size_t i = 0; i < dim; ++i)
-            {
-                out[i] += partial[i];
-            }
+            matvec(in, out);
         }
-        return out;
     };
 }
