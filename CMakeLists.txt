@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(pybind11 CONFIG REQUIRED)
+find_package(OpenMP REQUIRED)
 
 pybind11_add_module(
     quantlop_cpp
@@ -17,5 +18,6 @@ pybind11_add_module(
     cpp/src/krylov.cpp
 )
 target_include_directories(quantlop_cpp PRIVATE cpp/include)
+target_link_libraries(_core PRIVATE OpenMP::OpenMP_CXX)
 
 install(TARGETS quantlop_cpp LIBRARY DESTINATION quantlop)
