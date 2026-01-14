@@ -1,18 +1,14 @@
 #pragma once
-
-#include <complex>
-#include <cstdint>
-#include <string>
+#include "include.hpp"
 
 class MatVec
 {
 public:
-    MatVec(std::complex<double> coeff, std::string string);
-
-    void operator()(const std::complex<double> *in, std::complex<double> *out) const;
+    MatVec(Complex c, String str);
+    void operator()(const Complex *in, Complex *out) const;
 
 private:
-    std::complex<double> _coeff;
-    std::string _string;
-    std::uint64_t _flip_mask, y_mask, z_mask;
+    Complex coeff;
+    String string;
+    Mask flip_mask, y_mask, z_mask;
 };

@@ -1,66 +1,39 @@
 #include "hamiltonian.hpp"
 
-#include <utility>
+Hamiltonian::Hamiltonian(std::vector<PauliWord> pws)
+    : pwords(std::move(pws)) {}
 
-Hamiltonian::Hamiltonian(std::vector<PauliWord> pwords)
-    : _pwords(std::move(pwords)),
-      _dim(std::size_t{1} << _pwords.front().string().size()) {}
+Size Hamiltonian::num_qubits() const { return pwords.front().num_qubits(); }
 
-const std::vector<PauliWord> &Hamiltonian::pwords() const { return _pwords; }
-
-std::vector<std::complex<double>> Hamiltonian::coeffs() const
+void Hamiltonian::matvec_into(const Complex *in, Complex *out) const
 {
-    std::vector<std::complex<double>> out;
-    out.reserve(_pwords.size());
-    for (const PauliWord &pw : _pwords)
+    Size dim = Size(1) << num_qubits();
+    std::fill(out, out + dim, 0.0);
+    for (const PauliWord &pw : pwords)
     {
-        out.push_back(pw.coeff());
-    }
-    return out;
-}
-
-std::vector<std::string> Hamiltonian::strings() const
-{
-    std::vector<std::string> out;
-    out.reserve(_pwords.size());
-    for (const PauliWord &pw : _pwords)
-    {
-        out.push_back(pw.string());
-    }
-    return out;
-}
-
-void Hamiltonian::matvec_into(const std::complex<double> *in, std::complex<double> *out) const
-{
-    for (std::size_t i = 0; i < _dim; ++i)
-    {
-        out[i] = std::complex<double>();
-    }
-    for (const auto &pw : _pwords)
-    {
-        pw._matvec(in, out);
+        pw.matvec(in, out);
     }
 }
 
-Hamiltonian Hamiltonian::operator*(std::complex<double> c) const
+Hamiltonian Hamiltonian::operator*(Complex c) const
 {
-    std::vector<PauliWord> pwords;
-    pwords.reserve(_pwords.size());
-    for (const PauliWord &pw : _pwords)
+    std::vector<PauliWord> pws;
+    pws.reserve(pwords.size());
+    for (const PauliWord &pw : pwords)
     {
-        pwords.push_back(pw * c);
+        pws.push_back(pw * c);
     }
-    return Hamiltonian(std::move(pwords));
+    return Hamiltonian(std::move(pws));
 }
 
-Hamiltonian operator*(std::complex<double> c, const Hamiltonian &ham) { return ham * c; }
+Hamiltonian operator*(Complex c, const Hamiltonian &ham) { return ham * c; }
 
 double Hamiltonian::lcu_norm() const
 {
     double norm = 0.0;
-    for (const PauliWord &pw : _pwords)
+    for (const PauliWord &pw : pwords)
     {
-        norm += std::abs(pw.coeff());
+        norm += std::abs(pw.coeff);
     }
     return norm;
 }

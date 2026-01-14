@@ -1,19 +1,12 @@
 #include "pauliword.hpp"
 
-#include <cstddef>
-#include <utility>
+PauliWord::PauliWord(Complex c, String str)
+    : coeff(c),
+      string(str),
+      matvec(c, str) {}
 
-PauliWord::PauliWord(std::complex<double> coeff, std::string string)
-    : _coeff(coeff),
-      _string(std::move(string)),
-      _matvec(_coeff, _string) {}
+Size PauliWord::num_qubits() const { return string.size(); }
 
-std::complex<double> PauliWord::coeff() const { return _coeff; }
+PauliWord PauliWord::operator*(Complex c) const { return PauliWord(coeff * c, string); }
 
-const std::string &PauliWord::string() const { return _string; }
-
-std::size_t PauliWord::num_qubits() const { return _string.size(); }
-
-PauliWord PauliWord::operator*(std::complex<double> c) const { return PauliWord(_coeff * c, _string); }
-
-PauliWord operator*(std::complex<double> c, const PauliWord &pw) { return pw * c; }
+PauliWord operator*(Complex c, const PauliWord &pw) { return pw * c; }
