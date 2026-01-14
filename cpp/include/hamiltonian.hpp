@@ -1,10 +1,11 @@
 #pragma once
 
+#include <cstddef>
+#include <complex>
 #include <string>
 #include <vector>
 
 #include "pauliword.hpp"
-#include "utils.hpp"
 
 class Hamiltonian
 {
@@ -12,18 +13,16 @@ public:
     Hamiltonian(std::vector<PauliWord> pwords);
 
     const std::vector<PauliWord> &pwords() const;
-    std::vector<Complex> coeffs() const;
+    std::vector<std::complex<double>> coeffs() const;
     std::vector<std::string> strings() const;
-    void matvec_into(const Complex *in, Complex *out) const;
+    void matvec_into(const std::complex<double> *in, std::complex<double> *out) const;
 
-    Hamiltonian operator*(Complex c) const;
-    friend Hamiltonian operator*(Complex c, const Hamiltonian &ham);
+    Hamiltonian operator*(std::complex<double> c) const;
+    friend Hamiltonian operator*(std::complex<double> c, const Hamiltonian &ham);
 
     double lcu_norm() const;
 
 private:
-    static MatVecFn make_matvec(const std::vector<PauliWord> &pwords);
-
     std::vector<PauliWord> _pwords;
-    MatVecFn _matvec;
+    std::size_t _dim;
 };

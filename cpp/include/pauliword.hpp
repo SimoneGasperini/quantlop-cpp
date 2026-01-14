@@ -1,28 +1,26 @@
 #pragma once
 
 #include <cstddef>
+#include <complex>
 #include <string>
 
-#include "utils.hpp"
+#include "matvec.hpp"
 
 class PauliWord
 {
 public:
-    PauliWord(Complex coeff, std::string string);
+    PauliWord(std::complex<double> coeff, std::string string);
 
-    Complex coeff() const;
+    std::complex<double> coeff() const;
     const std::string &string() const;
     std::size_t num_qubits() const;
-    void matvec_into(const Complex *in, Complex *out) const;
 
-    PauliWord operator*(Complex c) const;
-    friend PauliWord operator*(Complex c, const PauliWord &pw);
+    PauliWord operator*(std::complex<double> c) const;
+    friend PauliWord operator*(std::complex<double> c, const PauliWord &pw);
 
 private:
     friend class Hamiltonian;
-    static MatVecFn make_matvec(Complex coeff, std::string string);
-
-    Complex _coeff;
+    std::complex<double> _coeff;
     std::string _string;
-    MatVecFn _matvec;
+    MatVec _matvec;
 };

@@ -11,6 +11,7 @@ pybind11_add_module(
     _core
     cpp/src/bindings.cpp
     cpp/src/pauliword.cpp
+    cpp/src/matvec.cpp
     cpp/src/hamiltonian.cpp
 )
 target_include_directories(_core PRIVATE cpp/include)
