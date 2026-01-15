@@ -32,7 +32,7 @@ def scipy_sparse_simulation(nq, op, psi):
 
 
 def quantlop_simulation(nq, op, psi):
-    linop = Hamiltonian.from_pennylane(op, nqubits=nq)
+    linop = Hamiltonian.from_pennylane(op, num_qubits=nq)
     return evolve(linop, psi)
 
 
