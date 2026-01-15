@@ -2,6 +2,7 @@
 #include <complex>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 using Index = std::size_t;
 using Size = std::size_t;
