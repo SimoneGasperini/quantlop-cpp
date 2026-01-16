@@ -66,7 +66,7 @@ ax.plot(
 )
 for k in range(memory1.shape[1]):
     ax.plot(qubits[: len(memory1)], memory1[:, k], color=col1, alpha=alpha)
-ax.plot(qubits, np.mean(memory2[: len(memory2)], axis=1), marker="s", label=lab2, color=col2)
+ax.plot(qubits[: len(memory2)], np.mean(memory2, axis=1), marker="s", label=lab2, color=col2)
 for k in range(memory2.shape[1]):
     ax.plot(qubits[: len(memory2)], memory2[:, k], color=col2, alpha=alpha)
 ax.plot(qubits, np.mean(memory3, axis=1), marker="s", label=lab3, color=col3)
