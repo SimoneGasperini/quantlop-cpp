@@ -12,7 +12,7 @@ alpha = 0.4
 yticks = [0.01, 0.1, 1, 10, 100]
 qubits = sorted(int(i) for i in data[lab3])
 runtime1 = np.array([data[lab1][str(q)] for q in qubits if str(q) in data[lab1]])
-runtime2 = np.array([data[lab2][str(q)] for q in qubits])
+runtime2 = np.array([data[lab2][str(q)] for q in qubits if str(q) in data[lab2]])
 runtime3 = np.array([data[lab3][str(q)] for q in qubits])
 
 fig, ax = plt.subplots(figsize=(9, 6))
@@ -26,14 +26,14 @@ ax.plot(
 for k in range(runtime1.shape[1]):
     ax.plot(qubits[: len(runtime1)], runtime1[:, k], color=col1, alpha=alpha)
 ax.plot(
-    qubits,
+    qubits[: len(runtime2)],
     np.mean(runtime2, axis=1),
     marker="s",
     label=lab2,
     color=col2,
 )
 for k in range(runtime2.shape[1]):
-    ax.plot(qubits, runtime2[:, k], color=col2, alpha=alpha)
+    ax.plot(qubits[: len(runtime2)], runtime2[:, k], color=col2, alpha=alpha)
 ax.plot(qubits, np.mean(runtime3, axis=1), marker="s", label=lab3, color=col3)
 for k in range(runtime3.shape[1]):
     ax.plot(qubits, runtime3[:, k], color=col3, alpha=alpha)
@@ -57,7 +57,7 @@ with open("memory.json", "r") as file:
 
 yticks = [0.1, 1, 10, 100, 1000]
 memory1 = np.array([data[lab1][str(q)] for q in qubits if str(q) in data[lab1]])
-memory2 = np.array([data[lab2][str(q)] for q in qubits])
+memory2 = np.array([data[lab2][str(q)] for q in qubits if str(q) in data[lab2]])
 memory3 = np.array([data[lab3][str(q)] for q in qubits])
 
 fig, ax = plt.subplots(figsize=(9, 6))
@@ -66,9 +66,9 @@ ax.plot(
 )
 for k in range(memory1.shape[1]):
     ax.plot(qubits[: len(memory1)], memory1[:, k], color=col1, alpha=alpha)
-ax.plot(qubits, np.mean(memory2, axis=1), marker="s", label=lab2, color=col2)
+ax.plot(qubits, np.mean(memory2[: len(memory2)], axis=1), marker="s", label=lab2, color=col2)
 for k in range(memory2.shape[1]):
-    ax.plot(qubits, memory2[:, k], color=col2, alpha=alpha)
+    ax.plot(qubits[: len(memory2)], memory2[:, k], color=col2, alpha=alpha)
 ax.plot(qubits, np.mean(memory3, axis=1), marker="s", label=lab3, color=col3)
 for k in range(memory3.shape[1]):
     ax.plot(qubits, memory3[:, k], color=col3, alpha=alpha)
