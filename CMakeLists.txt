@@ -18,6 +18,6 @@ pybind11_add_module(
     cpp/src/krylov.cpp
 )
 target_include_directories(quantlop_cpp PRIVATE cpp/include)
-target_link_libraries(_core PRIVATE OpenMP::OpenMP_CXX)
+target_link_libraries(quantlop_cpp PRIVATE OpenMP::OpenMP_CXX)
 
 install(TARGETS quantlop_cpp LIBRARY DESTINATION quantlop)
