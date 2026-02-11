@@ -14,7 +14,7 @@ def test_scipy(num_qubits):
     mat = op.matrix(range(num_qubits))
     psi_scipy = sp.linalg.expm(-1j * mat) @ psi
     ham = Hamiltonian.from_pennylane(op, num_qubits=num_qubits)
-    psi_linop = evolve(ham, psi)
+    psi_linop = evolve(ham, psi, method="higham")
     assert np.allclose(psi_scipy, psi_linop)
 
 
@@ -31,5 +31,5 @@ def test_pennylane(num_qubits):
 
     psi_pennylane = circuit()
     ham = Hamiltonian.from_pennylane(op, num_qubits=num_qubits)
-    psi_linop = evolve(ham, psi)
+    psi_linop = evolve(ham, psi, method="higham")
     assert np.allclose(psi_pennylane, psi_linop)

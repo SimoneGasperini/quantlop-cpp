@@ -56,7 +56,7 @@ inline double inf_norm(const Complex *psi, Size dim)
     return norm;
 }
 
-inline Complex *expm_multiply(const Hamiltonian &ham, const Complex *psi)
+inline Complex *expm_multiply_higham(const Hamiltonian &ham, const Complex *psi)
 {
     const double tol = std::ldexp(1.0, -24);
     const auto [m_star, s] = fragment_3_1(ham);
@@ -97,9 +97,14 @@ inline Complex *expm_multiply(const Hamiltonian &ham, const Complex *psi)
     return out;
 }
 
-inline Complex *evolve(const Hamiltonian &ham, const Complex *psi, Complex coeff = 1.0)
+inline Complex *evolve(const Hamiltonian &ham, const Complex *psi, Complex coeff = 1.0, const std::string &method = "higham")
 {
     const Complex i(0.0, 1.0);
     const Hamiltonian expm = (-i * coeff) * ham;
-    return expm_multiply(expm, psi);
+    if (method == "higham")
+        return expm_multiply_higham(expm, psi);
+    else if (method == "krylov")
+        return nullptr; // TODO: implement Krylov method
+    else
+        throw std::invalid_argument("Invalid method: " + method);
 }

@@ -8,12 +8,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(pybind11 CONFIG REQUIRED)
 
 pybind11_add_module(
-    _core
+    quantlop_cpp
     cpp/src/bindings.cpp
     cpp/src/pauliword.cpp
     cpp/src/matvec.cpp
     cpp/src/hamiltonian.cpp
 )
-target_include_directories(_core PRIVATE cpp/include)
+target_include_directories(quantlop_cpp PRIVATE cpp/include)
 
-install(TARGETS _core LIBRARY DESTINATION quantlop)
+install(TARGETS quantlop_cpp LIBRARY DESTINATION quantlop)
