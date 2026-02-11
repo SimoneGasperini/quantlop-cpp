@@ -275,13 +275,13 @@ Complex *expm_multiply_krylov(const Hamiltonian &ham, const Complex *psi)
     Complex *y = new Complex[dim];
     std::fill(y, y + dim, Complex(0.0, 0.0));
 
-    const Size m = std::min<Size>(20, dim);
+    const Size m = std::min<Size>(10, dim);
     if (m == 0)
     {
         return y;
     }
 
-    const int max_restarts_base = 20;
+    const int max_restarts_base = 3;
     const int max_restarts = std::min(max_restarts_base, static_cast<int>(dim / m) + 1);
     const Size mmax = m * static_cast<Size>(max_restarts);
     const double bnorm = l2_norm(psi, dim);
@@ -290,7 +290,7 @@ Complex *expm_multiply_krylov(const Hamiltonian &ham, const Complex *psi)
         return y;
     }
 
-    const double rtol = 1e-6;
+    const double rtol = 1e-3;
     const double atol = rtol * bnorm;
     std::vector<Complex> V(dim * (m + 1), Complex(0.0, 0.0));
     std::vector<Complex> H((mmax + 1) * mmax, Complex(0.0, 0.0));
