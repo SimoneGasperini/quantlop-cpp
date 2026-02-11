@@ -408,7 +408,8 @@ inline Complex *expm_multiply_krylov(const Hamiltonian &ham, const Complex *psi)
         }
     }
 
-    auto extract_h = [&H, mmax](Size k) {
+    auto extract_h = [&H, mmax](Size k)
+    {
         std::vector<Complex> hk(k * k, Complex(0.0, 0.0));
         for (Index row = 0; row < k; ++row)
         {
@@ -494,7 +495,7 @@ inline Complex *expm_multiply_krylov(const Hamiltonian &ham, const Complex *psi)
     return y;
 }
 
-inline Complex *evolve(const Hamiltonian &ham, const Complex *psi, Complex coeff = 1.0, const std::string &method = "higham")
+inline Complex *evolve(const Hamiltonian &ham, const Complex *psi, Complex coeff, const std::string &method)
 {
     const Complex i(0.0, 1.0);
     const Hamiltonian expm = (-i * coeff) * ham;

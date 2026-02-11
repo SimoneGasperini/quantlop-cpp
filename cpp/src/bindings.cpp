@@ -14,7 +14,7 @@ static py::array_t<Complex>
 evolve_py(const Hamiltonian &ham,
           py::array_t<Complex, py::array::c_style | py::array::forcecast> psi,
           Complex coeff,
-          const std::string &method = "higham")
+          const std::string &method)
 {
     py::buffer_info info = psi.request();
 
@@ -26,17 +26,15 @@ evolve_py(const Hamiltonian &ham,
     return py::array_t<Complex>(static_cast<py::ssize_t>(dim), out_ptr, owner);
 }
 
-PYBIND11_MODULE(quantlop_cpp, m)
+PYBIND11_MODULE(quantlop_cpp, module_py)
 {
-    m.doc() = "Quantlop C++ core bindings";
+    module_py.doc() = "Quantlop C++ core bindings";
 
-    py::class_<PauliWord>(m, "PauliWord")
+    py::class_<PauliWord>(module_py, "PauliWord")
         .def(py::init<Complex, String>(), py::arg("coeff"), py::arg("string"));
 
-    py::class_<Hamiltonian>(m, "Hamiltonian")
+    py::class_<Hamiltonian>(module_py, "Hamiltonian")
         .def(py::init<std::vector<PauliWord>>(), py::arg("pauli_words"));
 
-    m.def("evolve", &evolve_py, py::arg("ham"), py::arg("psi"),
-          py::arg("coeff") = Complex(1.0, 0.0),
-          py::arg("method") = std::string("higham"));
+    module_py.def("evolve", &evolve_py, py::arg("ham"), py::arg("psi"), py::arg("coeff"), py::arg("method"));
 }
