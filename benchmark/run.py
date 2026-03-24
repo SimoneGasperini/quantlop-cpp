@@ -31,14 +31,9 @@ def scipy_sparse_simulation(nq, op, psi):
     return expm_multiply(-1j * sparse, psi, traceA=0)
 
 
-def quantlop_higham_simulation(nq, op, psi):
+def quantlop_simulation(nq, op, psi):
     linop = Hamiltonian.from_pennylane(op, num_qubits=nq)
-    return evolve(linop, psi, method="higham")
-
-
-def quantlop_krylov_simulation(nq, op, psi):
-    linop = Hamiltonian.from_pennylane(op, num_qubits=nq)
-    return evolve(linop, psi, method="krylov")
+    return evolve(linop, psi)
 
 
 def runtime_and_memory(func, *args, reps, interval=0.0005):
@@ -64,21 +59,19 @@ def run_benchmark(num_qubits, time_fname, mem_fname, reps):
     runtime = {
         "SciPy dense": {},
         "SciPy sparse": {},
-        "QuantLop (higham)": {},
-        "QuantLop (krylov)": {},
+        "QuantLop": {},
     }
     memory = {
         "SciPy dense": {},
         "SciPy sparse": {},
-        "QuantLop (higham)": {},
-        "QuantLop (krylov)": {},
+        "QuantLop": {},
     }
     for nq in num_qubits:
         print(f"\nRunning simulation for {nq} qubits:")
         op = get_rand_hamiltonian(nqubits=nq, num_terms=5 * nq)
         psi = np.zeros(2**nq, dtype=complex)
         psi[0] = 1
-        if nq < 8:
+        if nq < 13:
             time, mem, result1 = runtime_and_memory(
                 scipy_dense_simulation, nq, op, psi, reps=reps
             )
@@ -90,19 +83,13 @@ def run_benchmark(num_qubits, time_fname, mem_fname, reps):
         runtime["SciPy sparse"][nq] = time
         memory["SciPy sparse"][nq] = mem
         time, mem, result3 = runtime_and_memory(
-            quantlop_higham_simulation, nq, op, psi, reps=reps
+            quantlop_simulation, nq, op, psi, reps=reps
         )
-        runtime["QuantLop (higham)"][nq] = time
-        memory["QuantLop (higham)"][nq] = mem
-        time, mem, result4 = runtime_and_memory(
-            quantlop_krylov_simulation, nq, op, psi, reps=reps
-        )
-        runtime["QuantLop (krylov)"][nq] = time
-        memory["QuantLop (krylov)"][nq] = mem
-        if nq < 8:
+        runtime["QuantLop"][nq] = time
+        memory["QuantLop"][nq] = mem
+        if nq < 13:
             assert np.allclose(result1, result2)
         assert np.allclose(result2, result3)
-        assert np.allclose(result3, result4)
         with open(time_fname, "w") as file:
             json.dump(runtime, file, indent=4)
         with open(mem_fname, "w") as file:
