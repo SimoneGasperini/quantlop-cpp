@@ -19,6 +19,16 @@ namespace
         return std::sqrt(sum);
     }
 
+    Complex dot_product(const Complex *lhs, const Complex *rhs, Size dim)
+    {
+        Complex out = 0.0;
+        for (Index i = 0; i < dim; ++i)
+        {
+            out += std::conj(lhs[i]) * rhs[i];
+        }
+        return out;
+    }
+
     double one_norm_dense(const std::vector<Complex> &arr, Size dim)
     {
         double best = 0.0;
@@ -120,10 +130,6 @@ namespace
 
     std::vector<Complex> expm_dense(std::vector<Complex> a, Size n)
     {
-        if (n == 0)
-        {
-            return {};
-        }
         if (n == 1)
         {
             return {std::exp(a[0])};
@@ -204,186 +210,154 @@ namespace
         return R;
     }
 
-    bool krylov_arnoldi_iteration(
+    std::vector<Complex> extract_scaled_dense(
+        const std::vector<Complex> &h,
+        Size ld,
+        Size n,
+        Complex scale)
+    {
+        std::vector<Complex> out(n * n, Complex(0.0, 0.0));
+        for (Index row = 0; row < n; ++row)
+        {
+            for (Index col = 0; col < n; ++col)
+            {
+                out[row * n + col] = scale * h[row * ld + col];
+            }
+        }
+        return out;
+    }
+
+    Size build_lanczos_tridiagonal(
         const Hamiltonian &ham,
-        const Complex *b,
+        const Complex *psi,
         double bnorm,
-        std::vector<Complex> &V,
-        std::vector<Complex> &H,
-        Size h_ld,
-        Size begin,
+        std::vector<Complex> &T,
         Size m)
     {
         const Size dim = Size(1) << ham.num_qubits();
         const double norm_tol = std::numeric_limits<double>::epsilon() * 1e2;
+        std::vector<Complex> prev(dim, Complex(0.0, 0.0));
+        std::vector<Complex> curr(dim, Complex(0.0, 0.0));
         std::vector<Complex> w(dim, Complex(0.0, 0.0));
+        double beta_prev = 0.0;
 
-        for (Index i = 0; i < dim; ++i)
+        for (Index row = 0; row < dim; ++row)
         {
-            V[i] = b[i] / bnorm;
+            curr[row] = psi[row] / bnorm;
         }
 
         for (Index k = 0; k < m; ++k)
         {
-            ham.matvec_into(V.data() + k * dim, w.data());
-            std::copy(w.begin(), w.end(), V.begin() + (k + 1) * dim);
+            ham.matvec_into(curr.data(), w.data());
 
-            for (Index i = 0; i <= k; ++i)
+            if (k > 0)
             {
-                Complex hij = 0.0;
-                const Complex *vi = V.data() + i * dim;
-                Complex *vkp1 = V.data() + (k + 1) * dim;
                 for (Index row = 0; row < dim; ++row)
                 {
-                    hij += std::conj(vi[row]) * vkp1[row];
-                }
-                H[(begin + i) * h_ld + (begin + k)] = hij;
-                for (Index row = 0; row < dim; ++row)
-                {
-                    vkp1[row] -= hij * vi[row];
+                    w[row] -= beta_prev * prev[row];
                 }
             }
 
-            Complex *vkp1 = V.data() + (k + 1) * dim;
-            const double beta = l2_norm(vkp1, dim);
-            H[(begin + k + 1) * h_ld + (begin + k)] = beta;
-            if (beta < norm_tol)
-            {
-                return true;
-            }
+            Complex alpha = dot_product(curr.data(), w.data(), dim);
+            alpha = Complex(alpha.real(), 0.0);
+            T[k * m + k] = alpha;
+
             for (Index row = 0; row < dim; ++row)
             {
-                vkp1[row] /= beta;
+                w[row] -= alpha * curr[row];
             }
+
+            const double beta_next = l2_norm(w.data(), dim);
+            if (k + 1 < m)
+            {
+                T[(k + 1) * m + k] = beta_next;
+                T[k * m + (k + 1)] = beta_next;
+            }
+
+            if (beta_next < norm_tol || k + 1 == m)
+            {
+                return k + 1;
+            }
+
+            std::copy(curr.begin(), curr.end(), prev.begin());
+            for (Index row = 0; row < dim; ++row)
+            {
+                curr[row] = w[row] / beta_next;
+            }
+
+            beta_prev = beta_next;
+        }
+        return m;
+    }
+
+    void reconstruct_lanczos_state(
+        const Hamiltonian &ham,
+        const Complex *psi,
+        double bnorm,
+        const std::vector<Complex> &T,
+        Size basis_size,
+        Complex coeff,
+        Complex *out)
+    {
+        const Size dim = Size(1) << ham.num_qubits();
+        std::vector<Complex> prev(dim, Complex(0.0, 0.0));
+        std::vector<Complex> curr(dim, Complex(0.0, 0.0));
+        std::vector<Complex> w(dim, Complex(0.0, 0.0));
+
+        for (Index row = 0; row < dim; ++row)
+        {
+            curr[row] = psi[row] / bnorm;
         }
 
-        return false;
+        const Complex scale = Complex(0.0, -1.0) * coeff;
+        const std::vector<Complex> fT = expm_dense(extract_scaled_dense(T, basis_size, basis_size, scale), basis_size);
+
+        for (Index row = 0; row < dim; ++row)
+        {
+            out[row] = bnorm * curr[row] * fT[0];
+        }
+
+        for (Index k = 1; k < basis_size; ++k)
+        {
+            const double beta_prev = T[(k - 1) * basis_size + k].real();
+            const Complex alpha_prev = T[(k - 1) * basis_size + (k - 1)];
+            ham.matvec_into(curr.data(), w.data());
+
+            for (Index row = 0; row < dim; ++row)
+            {
+                w[row] -= alpha_prev * curr[row];
+            }
+            if (k > 1)
+            {
+                const double beta_prevprev = T[(k - 2) * basis_size + (k - 1)].real();
+                for (Index row = 0; row < dim; ++row)
+                {
+                    w[row] -= beta_prevprev * prev[row];
+                }
+            }
+
+            std::copy(curr.begin(), curr.end(), prev.begin());
+            for (Index row = 0; row < dim; ++row)
+            {
+                curr[row] = w[row] / beta_prev;
+                out[row] += bnorm * curr[row] * fT[k * basis_size + 0];
+            }
+        }
     }
 }
 
-Complex *expm_multiply_krylov(const Hamiltonian &ham, const Complex *psi)
+Complex *expm_multiply_krylov(const Hamiltonian &ham, const Complex *psi, Complex coeff)
 {
     const Size dim = Size(1) << ham.num_qubits();
-    Complex *y = new Complex[dim];
-    std::fill(y, y + dim, Complex(0.0, 0.0));
+    Complex *out = new Complex[dim];
+    std::fill(out, out + dim, Complex(0.0, 0.0));
 
-    const Size m = std::min<Size>(10, dim);
-    if (m == 0)
-    {
-        return y;
-    }
-
-    const int max_restarts_base = 3;
-    const int max_restarts = std::min(max_restarts_base, static_cast<int>(dim / m) + 1);
-    const Size mmax = m * static_cast<Size>(max_restarts);
     const double bnorm = l2_norm(psi, dim);
-    if (bnorm == 0.0)
-    {
-        return y;
-    }
+    const Size m = std::min<Size>(30, dim);
 
-    const double rtol = 1e-3;
-    const double atol = rtol * bnorm;
-    std::vector<Complex> V(dim * (m + 1), Complex(0.0, 0.0));
-    std::vector<Complex> H((mmax + 1) * mmax, Complex(0.0, 0.0));
+    std::vector<Complex> T(m * m, Complex(0.0, 0.0));
+    const Size basis_size = build_lanczos_tridiagonal(ham, psi, bnorm, T, m);
+    reconstruct_lanczos_state(ham, psi, bnorm, T, basis_size, coeff, out);
 
-    const bool breakdown0 = krylov_arnoldi_iteration(ham, psi, bnorm, V, H, mmax, 0, m);
-    Size j0 = m;
-    if (breakdown0)
-    {
-        for (Index k = 0; k < m; ++k)
-        {
-            if (std::abs(H[(k + 1) * mmax + k]) < std::numeric_limits<double>::epsilon() * 1e2)
-            {
-                j0 = k + 1;
-                break;
-            }
-        }
-    }
-
-    auto extract_h = [&H, mmax](Size k)
-    {
-        std::vector<Complex> hk(k * k, Complex(0.0, 0.0));
-        for (Index row = 0; row < k; ++row)
-        {
-            for (Index col = 0; col < k; ++col)
-            {
-                hk[row * k + col] = H[row * mmax + col];
-            }
-        }
-        return hk;
-    };
-
-    std::vector<Complex> fH = expm_dense(extract_h(j0), j0);
-    for (Index row = 0; row < dim; ++row)
-    {
-        Complex accum = 0.0;
-        for (Index col = 0; col < j0; ++col)
-        {
-            accum += V[col * dim + row] * fH[col * j0 + 0];
-        }
-        y[row] = bnorm * accum;
-    }
-
-    if (breakdown0)
-    {
-        return y;
-    }
-
-    double update_norm = 0.0;
-    for (Index row = 0; row < j0; ++row)
-    {
-        update_norm += std::norm(bnorm * fH[row * j0 + 0]);
-    }
-    update_norm = std::sqrt(update_norm);
-
-    int restart = 1;
-    while (restart < max_restarts && update_norm > atol)
-    {
-        const Size begin = static_cast<Size>(restart) * m;
-        const Size end = static_cast<Size>(restart + 1) * m;
-        const bool breakdown = krylov_arnoldi_iteration(ham, V.data() + m * dim, 1.0, V, H, mmax, begin, m);
-
-        Size j = m;
-        if (breakdown)
-        {
-            for (Index k = 0; k < m; ++k)
-            {
-                if (std::abs(H[(begin + k + 1) * mmax + (begin + k)]) < std::numeric_limits<double>::epsilon() * 1e2)
-                {
-                    j = k + 1;
-                    break;
-                }
-            }
-        }
-
-        const Size k = breakdown ? (begin + j) : end;
-        fH = expm_dense(extract_h(k), k);
-
-        const Size cols = breakdown ? j : m;
-        for (Index row = 0; row < dim; ++row)
-        {
-            Complex accum = 0.0;
-            for (Index col = 0; col < cols; ++col)
-            {
-                const Size global_row = begin + col;
-                accum += V[col * dim + row] * fH[global_row * k + 0];
-            }
-            y[row] += bnorm * accum;
-        }
-
-        if (breakdown)
-        {
-            return y;
-        }
-
-        update_norm = 0.0;
-        for (Index row = begin; row < end; ++row)
-        {
-            update_norm += std::norm(bnorm * fH[row * k + 0]);
-        }
-        update_norm = std::sqrt(update_norm);
-        ++restart;
-    }
-    return y;
+    return out;
 }

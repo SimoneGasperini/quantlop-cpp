@@ -6,7 +6,7 @@ from quantlop import Hamiltonian, evolve
 from quantlop import get_rand_hamiltonian
 
 
-@pytest.mark.parametrize("num_qubits", range(1, 9))
+@pytest.mark.parametrize("num_qubits", range(1, 11))
 @pytest.mark.parametrize("method", ("higham", "krylov"))
 def test_scipy(num_qubits, method):
     psi = np.zeros(2**num_qubits, dtype=complex)

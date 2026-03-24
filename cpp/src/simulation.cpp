@@ -7,5 +7,6 @@ Complex *evolve(const Hamiltonian &ham, const Complex *psi, Complex coeff, const
     const Hamiltonian expm = (-i * coeff) * ham;
 
     if (method == "higham") return expm_multiply_higham(expm, psi);
-    if (method == "krylov") return expm_multiply_krylov(expm, psi);
+    if (method == "krylov") return expm_multiply_krylov(ham, psi, coeff);
+    return nullptr;
 }
