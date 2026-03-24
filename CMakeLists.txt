@@ -13,7 +13,6 @@ pybind11_add_module(
     cpp/src/pauliword.cpp
     cpp/src/matvec.cpp
     cpp/src/hamiltonian.cpp
-    cpp/src/higham.cpp
     cpp/src/krylov.cpp
     cpp/src/simulation.cpp
 )

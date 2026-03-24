@@ -14,5 +14,5 @@ class Hamiltonian(Hamiltonian_cpp):
         return cls(pauli_words=pws)
 
 
-def evolve(ham, psi, coeff=1, method="higham"):
-    return evolve_cpp(ham, psi, coeff, method)
+def evolve(ham, psi, coeff=1):
+    return evolve_cpp(ham, psi, coeff)
