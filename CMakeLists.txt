@@ -15,6 +15,7 @@ pybind11_add_module(
     cpp/src/hamiltonian.cpp
     cpp/src/higham.cpp
     cpp/src/krylov.cpp
+    cpp/src/simulation.cpp
 )
 target_include_directories(quantlop_cpp PRIVATE cpp/include)
 

@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <utility>
+
 #include "hamiltonian.hpp"
 
 Hamiltonian::Hamiltonian(std::vector<PauliWord> pws)

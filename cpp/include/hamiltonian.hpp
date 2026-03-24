@@ -1,4 +1,6 @@
 #pragma once
+#include <vector>
+
 #include "include.hpp"
 #include "pauliword.hpp"
 

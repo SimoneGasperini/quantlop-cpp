@@ -1,3 +1,9 @@
+#include <algorithm>
+#include <cmath>
+#include <utility>
+#include <vector>
+
+#include "hamiltonian.hpp"
 #include "simulation.hpp"
 
 namespace
@@ -39,7 +45,7 @@ namespace
                 best_cost = cost;
             }
         }
-        return std::make_pair(m_star, s_star);
+        return {m_star, s_star};
     }
 
     double inf_norm(const Complex *psi, Size dim)

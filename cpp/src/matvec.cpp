@@ -1,3 +1,5 @@
+#include <bit>
+
 #include "matvec.hpp"
 
 MatVec::MatVec(Complex c, String str)

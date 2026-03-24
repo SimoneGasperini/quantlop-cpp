@@ -1,36 +1,33 @@
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <limits>
+#include <vector>
+
+#include "hamiltonian.hpp"
 #include "simulation.hpp"
 
 namespace
 {
-    double l2_norm(const Complex *vec, Size dim)
+    double l2_norm(const Complex *arr, Size dim)
     {
         double sum = 0.0;
         for (Index i = 0; i < dim; ++i)
         {
-            sum += std::norm(vec[i]);
+            sum += std::norm(arr[i]);
         }
         return std::sqrt(sum);
     }
 
-    double l2_norm(const std::vector<Complex> &vec)
-    {
-        double sum = 0.0;
-        for (const Complex &z : vec)
-        {
-            sum += std::norm(z);
-        }
-        return std::sqrt(sum);
-    }
-
-    double one_norm_dense(const std::vector<Complex> &a, Size n)
+    double one_norm_dense(const std::vector<Complex> &arr, Size dim)
     {
         double best = 0.0;
-        for (Index col = 0; col < n; ++col)
+        for (Index col = 0; col < dim; ++col)
         {
             double col_sum = 0.0;
-            for (Index row = 0; row < n; ++row)
+            for (Index row = 0; row < dim; ++row)
             {
-                col_sum += std::abs(a[row * n + col]);
+                col_sum += std::abs(arr[row * dim + col]);
             }
             best = std::max(best, col_sum);
         }
@@ -82,11 +79,6 @@ namespace
                     pivot = row;
                     pivot_abs = cand;
                 }
-            }
-
-            if (pivot_abs == 0.0)
-            {
-                throw std::runtime_error("Singular matrix encountered in Krylov matrix exponential");
             }
 
             if (pivot != col)

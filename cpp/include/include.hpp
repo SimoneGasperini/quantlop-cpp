@@ -1,8 +1,9 @@
-#include <bit>
+#pragma once
+
 #include <complex>
-#include <string>
-#include <vector>
+#include <cstddef>
 #include <cstdint>
+#include <string>
 
 using Index = std::size_t;
 using Size = std::size_t;
